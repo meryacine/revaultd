@@ -23,6 +23,9 @@ use jsonrpc::{
     simple_http,
 };
 
+// The minimum bitcoind version that can be used with revaultd.
+const MIN_BITCOIND_VERSION: &str = "210000";
+
 /// An error happened in the bitcoind-manager thread
 #[derive(Debug)]
 pub enum BitcoindError {
@@ -108,13 +111,39 @@ fn check_bitcoind_network(
     Ok(())
 }
 
+pub fn check_bitcoind_version(bitcoind: &BitcoinD) -> Result<(), BitcoindError> {
+    let network_info = bitcoind.getnetworkinfo()?;
+    let bitcoind_version = network_info
+        .get("version")
+        .and_then(|c| c.as_str())
+        .ok_or_else(|| {
+            BitcoindError::Custom("No valid 'version' in getnetworkinfo response?".to_owned())
+        })?;
+
+    if bitcoind_version < MIN_BITCOIND_VERSION {
+        // Converting the pieces of the version to `u8`s would normalize
+        // values like '00' -> 0 and '02' -> 2.
+        let major: u8 = MIN_BITCOIND_VERSION[0..=1].parse().unwrap();
+        let minor: u8 = MIN_BITCOIND_VERSION[2..=3].parse().unwrap();
+        let patch: u8 = MIN_BITCOIND_VERSION[4..=5].parse().unwrap();
+        return Err(BitcoindError::Custom(format!(
+            "Revaultd needs bitcoind v{}.{}.{} or greater to operate",
+            major, minor, patch
+        )));
+    }
+
+    Ok(())
+}
+
 /// Some sanity checks to be done at startup to make sure our bitcoind isn't going to fail under
 /// our feet for a legitimate reason.
 fn bitcoind_sanity_checks(
     bitcoind: &BitcoinD,
     bitcoind_config: &BitcoindConfig,
 ) -> Result<(), BitcoindError> {
-    check_bitcoind_network(bitcoind, &bitcoind_config.network)
+    check_bitcoind_version(bitcoind)?;
+    check_bitcoind_network(bitcoind, &bitcoind_config.network)?;
+    Ok(())
 }
 
 /// Connects to and sanity checks bitcoind.
