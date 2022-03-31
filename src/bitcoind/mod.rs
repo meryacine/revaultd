@@ -24,7 +24,7 @@ use jsonrpc::{
 };
 
 // The minimum bitcoind version that can be used with revaultd.
-const MIN_BITCOIND_VERSION: &str = "210000";
+const MIN_BITCOIND_VERSION: u64 = 210000;
 
 /// An error happened in the bitcoind-manager thread
 #[derive(Debug)]
@@ -115,20 +115,15 @@ fn check_bitcoind_version(bitcoind: &BitcoinD) -> Result<(), BitcoindError> {
     let network_info = bitcoind.getnetworkinfo()?;
     let bitcoind_version = network_info
         .get("version")
-        .and_then(|c| c.as_str())
+        .and_then(|v| v.as_u64())
         .ok_or_else(|| {
             BitcoindError::Custom("No valid 'version' in getnetworkinfo response?".to_owned())
         })?;
 
     if bitcoind_version < MIN_BITCOIND_VERSION {
-        // Converting the pieces of the version to `u8`s would normalize
-        // values like '00' -> 0 and '02' -> 2.
-        let major: u8 = MIN_BITCOIND_VERSION[0..=1].parse().unwrap();
-        let minor: u8 = MIN_BITCOIND_VERSION[2..=3].parse().unwrap();
-        let patch: u8 = MIN_BITCOIND_VERSION[4..=5].parse().unwrap();
         return Err(BitcoindError::Custom(format!(
-            "Revaultd needs bitcoind v{}.{}.{} or greater to operate",
-            major, minor, patch
+            "Revaultd needs bitcoind v{} or greater to operate but v{} was found",
+            MIN_BITCOIND_VERSION, bitcoind_version
         )));
     }
 

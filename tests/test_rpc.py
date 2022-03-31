@@ -13,6 +13,7 @@ from fixtures import *
 from test_framework import serializations
 from test_framework.utils import (
     POSTGRES_IS_SETUP,
+    BITCOIND_VERSION,
     TIMEOUT,
     RpcError,
     wait_for,
@@ -36,6 +37,21 @@ def test_getinfo(revaultd_manager, bitcoind):
     height = revaultd_manager.rpc.call("getinfo")["blockheight"]
     bitcoind.generate_block(1)
     wait_for(lambda: revaultd_manager.rpc.call("getinfo")["blockheight"] == height + 1)
+
+
+def test_getnetworkinfo(revaluted_manager):
+    res = revaluted_manager.rpc.call("getnetworkinfo")
+    version_parts = BITCOIND_VERSION.split(".")
+    # Make sure that the version is in the long format "major.minor.patch"
+    # and not in the short one "major.minor"
+    while len(version_parts) < 3:
+        version_parts += ["00"]
+    # Convert 1-digit parts into 2-digit parts by adding a leading zero
+    for part in version_parts:
+        if len(part) == 1:
+            part = "0" + part
+    version = int("".join(version_parts))
+    assert res["version"] == version
 
 
 def test_listvaults(revaultd_manager, bitcoind):

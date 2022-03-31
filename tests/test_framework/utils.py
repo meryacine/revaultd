@@ -57,6 +57,7 @@ DEFAULT_COSIG_PATH = os.path.join(
     "target/debug/cosignerd",
 )
 COSIGNERD_PATH = os.getenv("COSIGNERD_PATH", DEFAULT_COSIG_PATH)
+BITCOIND_VERSION = os.getenv("BITCOIND_VERSION")
 DEFAULT_BITCOIND_PATH = "bitcoind"
 BITCOIND_PATH = os.getenv("BITCOIND_PATH", DEFAULT_BITCOIND_PATH)
 WT_PLUGINS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "wtplugins")
