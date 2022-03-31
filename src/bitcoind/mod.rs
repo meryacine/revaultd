@@ -111,7 +111,7 @@ fn check_bitcoind_network(
     Ok(())
 }
 
-pub fn check_bitcoind_version(bitcoind: &BitcoinD) -> Result<(), BitcoindError> {
+fn check_bitcoind_version(bitcoind: &BitcoinD) -> Result<(), BitcoindError> {
     let network_info = bitcoind.getnetworkinfo()?;
     let bitcoind_version = network_info
         .get("version")
